@@ -115,60 +115,7 @@
   let modoAdmin = false;
   let pedidoCliente = [];
 
-  // Cargar productos desde localStorage
-  const obtenerProductos = () => {
-    return JSON.parse(localStorage.getItem('productosPorMarca') || '{}');
-  }
-
-  const guardarProductos = (productos) => {
-    localStorage.setItem('productosPorMarca', JSON.stringify(productos));
-  }
-
-  // Mostrar productos de una marca
-  function mostrarProductos(marca) {
-    const productosData = obtenerProductos();
-    const productos = productosData[marca] || [];
-    listaProductos.innerHTML = '';
-    productos.forEach(producto => {
-      const li = document.createElement('li');
-      li.className = 'list-group-item d-flex justify-content-between align-items-center';
-      li.innerHTML = `
-        ${producto}
-        <button class="btn btn-sm btn-outline-success agregar">Agregar</button>
-      `;
-      li.querySelector('.agregar').addEventListener('click', () => agregarAlCarrito(producto));
-      listaProductos.appendChild(li);
-    });
-  }
-
-  // Agregar producto a carrito
-  function agregarAlCarrito(producto) {
-    pedidoCliente.push(producto);
-    renderizarCarrito();
-  }
-
-  function renderizarCarrito() {
-    carrito.innerHTML = '';
-    if (pedidoCliente.length === 0) {
-      carritoSection.classList.add('d-none');
-      return;
-    }
-    carritoSection.classList.remove('d-none');
-    pedidoCliente.forEach((item, index) => {
-      const li = document.createElement('li');
-      li.className = 'list-group-item d-flex justify-content-between align-items-center';
-      li.innerHTML = `
-        ${item}
-        <button class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})">Eliminar</button>
-      `;
-      carrito.appendChild(li);
-    });
-  }
-
-  function eliminarDelCarrito(index) {
-    pedidoCliente.splice(index, 1);
-    renderizarCarrito();
-  }
+  
 
   // Enviar por WhatsApp
   enviarWhatsapp.addEventListener('click', () => {
@@ -247,7 +194,137 @@ document.getElementById('exportarPDF').addEventListener('click', () => {
   }).save();
 });
 
+</script><!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZJ20Brqf8ImzBXHi60eE1h0v6mXFMEY0",
+    authDomain: "pedidos-607c7.firebaseapp.com",
+    projectId: "pedidos-607c7",
+    storageBucket: "pedidos-607c7.firebasestorage.app",
+    messagingSenderId: "607085812249",
+    appId: "1:607085812249:web:9ce1eeb692a39b5e052888",
+    measurementId: "G-735W8BVYLT"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Exponer Firebase y db a la ventana para usarlo en el script principal
+  window.firebaseApp = app;
+  window.firestoreDB = db;
+  window.firestoreCollection = collection;
+  window.firestoreAddDoc = addDoc;
+  window.firestoreGetDocs = getDocs;
+  window.firestoreQuery = query;
+  window.firestoreWhere = where;
+</script>  <!-- Firebase SDK -->
+<script type="module">
+  import { getFirestore, collection, getDocs, addDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+  // Inicialización de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZJ20Brqf8ImzBXHi60eE1h0v6mXFMEY0",
+    authDomain: "pedidos-607c7.firebaseapp.com",
+    projectId: "pedidos-607c7",
+    storageBucket: "pedidos-607c7.appspot.com",
+    messagingSenderId: "607085812249",
+    appId: "1:607085812249:web:9ce1eeb692a39b5e052888",
+    measurementId: "G-735W8BVYLT"
+  };
+  
+  // Inicializar Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Función para obtener productos desde Firebase
+  async function obtenerProductosDesdeFirebase() {
+    const ref = collection(db, "productos");
+    const q = query(ref, where("marca", "==", marcaActual));
+    const snapshot = await getDocs(q);
+
+    let productos = [];
+    snapshot.forEach(doc => {
+      productos.push(doc.data().producto);
+    });
+
+    return productos;
+  }
+
+  // Función para guardar productos en Firebase
+  async function guardarProductoEnFirebase(producto) {
+    const ref = collection(db, "productos");
+    await addDoc(ref, {
+      marca: marcaActual,
+      producto: producto,
+      timestamp: new Date()
+    });
+  }
+
+  // Mostrar productos de una marca (carga desde Firebase)
+  async function mostrarProductos(marca) {
+    const productos = await obtenerProductosDesdeFirebase();
+    listaProductos.innerHTML = '';
+    productos.forEach(producto => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.innerHTML = `
+        ${producto}
+        <button class="btn btn-sm btn-outline-success agregar">Agregar</button>
+      `;
+      li.querySelector('.agregar').addEventListener('click', () => agregarAlCarrito(producto));
+      listaProductos.appendChild(li);
+    });
+  }
+
+  // Agregar producto a carrito
+  function agregarAlCarrito(producto) {
+    pedidoCliente.push(producto);
+    renderizarCarrito();
+  }
+
+  function renderizarCarrito() {
+    carrito.innerHTML = '';
+    if (pedidoCliente.length === 0) {
+      carritoSection.classList.add('d-none');
+      return;
+    }
+    carritoSection.classList.remove('d-none');
+    pedidoCliente.forEach((item, index) => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.innerHTML = `
+        ${item}
+        <button class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})">Eliminar</button>
+      `;
+      carrito.appendChild(li);
+    });
+  }
+
+  // Eliminar producto del carrito
+  function eliminarDelCarrito(index) {
+    pedidoCliente.splice(index, 1);
+    renderizarCarrito();
+  }
+
+  // Agregar producto como admin (guardar en Firebase)
+  formProducto.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const producto = nuevoProducto.value.trim();
+    if (!producto) return;
+
+    // Guardar el nuevo producto en Firebase
+    guardarProductoEnFirebase(producto);
+
+    nuevoProducto.value = '';
+    mostrarProductos(marcaActual);
+  });
+
 </script>
+
+
 
 </body>
 </html>
